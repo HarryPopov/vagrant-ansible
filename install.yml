@@ -1,0 +1,68 @@
+---
+- name: tarkvara kontroll ja paigaldus
+  hosts: all
+  become: true
+
+  vars:
+    debian_ubuntu:
+      - snmpd
+      - tmux
+      - mc
+      - wget
+      - tree
+      - git
+
+    centos:
+      - net-snmp
+      - net-snmp-utils
+      - tmux
+      - mc
+      - wget
+      - tree
+      - git
+
+    opensuse:
+      - net-snmp
+      - tmux
+      - mc
+      - wget
+      - tree
+      - git
+
+  tasks:
+    - name: debian ja ubuntu
+      apt:
+        name: "{{ debian_ubuntu }}"
+        state: present
+        update_cache: true
+      register: apt_install_result
+      when: inventory_hostname in groups['debian'] or inventory_hostname in groups['ubuntu']
+
+    - name: paigaldatud paketid
+      debug:
+        msg: "paigaldatud paketid: {{ apt_install_result.changes | list }}"
+      when: apt_install_result.changed
+
+    - name: centos
+      dnf:
+        name: "{{ centos }}"
+        state: present
+      register: dnf_install_result
+      when: inventory_hostname in groups['centos']
+
+    - name: paigaldatud paketid
+      debug:
+        msg: "paigaldatud paketid: {{ dnf_install_result.results | map(attribute='name') | list }}"
+      when: dnf_install_result.changed
+
+    - name: opensuse
+      zypper:
+        name: "{{ opensuse }}"
+        state: present
+      register: zypper_install_result
+      when: inventory_hostname in groups['opensuse']
+
+    - name: paigaldatud paketid
+      debug:
+        msg: "paigaldatud paketid: {{ zypper_install_result.changes | list }}"
+      when: zypper_install_result.changed
